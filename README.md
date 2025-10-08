@@ -42,4 +42,7 @@ Computer_Science/
     lesson4_counter.c
     lesson4_myshell.c
     lesson4_pipe_my_cat.c
+  Lesson_5/
+    lesson5_stadium.c
+    lesson5_stadium_posix.c
 ```
