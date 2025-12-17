@@ -50,25 +50,25 @@ static void parent_send(pid_t child, pid_t self,
             printf("%d ", bit);
             fflush(stdout);
 
-            // отправляем один "датасигнал" с payload=0/1
+            // РѕС‚РїСЂР°РІР»СЏРµРј РѕРґРёРЅ "РґР°С‚Р°СЃРёРіРЅР°Р»" СЃ payload=0/1
             x_sigqueue(child, sig_bit, bit);
 
-            // ждём ACK строго от ребёнка
+            // Р¶РґС‘Рј ACK СЃС‚СЂРѕРіРѕ РѕС‚ СЂРµР±С‘РЅРєР°
             for (;;) {
                 siginfo_t info;
                 int got = x_sigwaitinfo(mask, &info);
                 if (got == sig_ack && info.si_pid == child) break;
-                // игнорируем посторонние/неожиданные сигналы
+                // РёРіРЅРѕСЂРёСЂСѓРµРј РїРѕСЃС‚РѕСЂРѕРЅРЅРёРµ/РЅРµРѕР¶РёРґР°РЅРЅС‹Рµ СЃРёРіРЅР°Р»С‹
             }
         }
         printf("- '%c'\n", (c >= 32 && c < 127) ? c : '.');
         fflush(stdout);
     }
 
-    // признак конца передачи: payload=2
+    // РїСЂРёР·РЅР°Рє РєРѕРЅС†Р° РїРµСЂРµРґР°С‡Рё: payload=2
     x_sigqueue(child, sig_fin, 2);
 
-    // (не обязательно) дождаться последнего ACK на fin
+    // (РЅРµ РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ) РґРѕР¶РґР°С‚СЊСЃСЏ РїРѕСЃР»РµРґРЅРµРіРѕ ACK РЅР° fin
     for (;;) {
         siginfo_t info;
         int got = x_sigwaitinfo(mask, &info);
@@ -85,14 +85,14 @@ static void child_recv(pid_t parent, size_t len,
     if (!buf) die("malloc");
     memset(buf, 0, len + 1);
 
-    // принимаем ровно len байт, затем fin
+    // РїСЂРёРЅРёРјР°РµРј СЂРѕРІРЅРѕ len Р±Р°Р№С‚, Р·Р°С‚РµРј fin
     for (size_t i = 0; i < len; ++i) {
         unsigned char c = 0;
         for (int b = 0; b < BITS; ++b) {
             siginfo_t info;
             int got;
 
-            // ждём "бит" только от родителя
+            // Р¶РґС‘Рј "Р±РёС‚" С‚РѕР»СЊРєРѕ РѕС‚ СЂРѕРґРёС‚РµР»СЏ
             for (;;) {
                 got = x_sigwaitinfo(mask, &info);
                 if (info.si_pid != parent) continue;
@@ -100,7 +100,7 @@ static void child_recv(pid_t parent, size_t len,
             }
 
             if (got == sig_fin && info.si_value.sival_int == 2) {
-                // fin пришёл раньше, не зависаем
+                // fin РїСЂРёС€С‘Р» СЂР°РЅСЊС€Рµ, РЅРµ Р·Р°РІРёСЃР°РµРј
                 buf[i] = c;
                 goto done;
             }
@@ -108,18 +108,18 @@ static void child_recv(pid_t parent, size_t len,
             int bit = info.si_value.sival_int & 1;
             c |= (unsigned char)(bit << b);
 
-            // ACK родителю
+            // ACK СЂРѕРґРёС‚РµР»СЋ
             x_sigqueue(parent, sig_ack, 0);
         }
         buf[i] = c;
     }
 
-    // ждём fin после всех байт (чтобы не было гонок завершения)
+    // Р¶РґС‘Рј fin РїРѕСЃР»Рµ РІСЃРµС… Р±Р°Р№С‚ (С‡С‚РѕР±С‹ РЅРµ Р±С‹Р»Рѕ РіРѕРЅРѕРє Р·Р°РІРµСЂС€РµРЅРёСЏ)
     for (;;) {
         siginfo_t info;
         int got = x_sigwaitinfo(mask, &info);
         if (info.si_pid == parent && got == sig_fin && info.si_value.sival_int == 2) {
-            x_sigqueue(parent, sig_ack, 0); // финальный ACK
+            x_sigqueue(parent, sig_ack, 0); // С„РёРЅР°Р»СЊРЅС‹Р№ ACK
             break;
         }
     }
@@ -137,7 +137,7 @@ int main(int argc, char** argv) {
     const char* s = (argc >= 2) ? argv[1] : "Hello World!\n";
     size_t len = strlen(s);
 
-    // Выбираем реальные номера RT-сигналов в рантайме (SIGRTMIN не const!)
+    // Р’С‹Р±РёСЂР°РµРј СЂРµР°Р»СЊРЅС‹Рµ РЅРѕРјРµСЂР° RT-СЃРёРіРЅР°Р»РѕРІ РІ СЂР°РЅС‚Р°Р№РјРµ (SIGRTMIN РЅРµ const!)
     int rtmin = SIGRTMIN;
     int rtmax = SIGRTMAX;
     if (rtmin + 3 > rtmax) {
@@ -148,9 +148,9 @@ int main(int argc, char** argv) {
     int sig_bit = rtmin + 0;  // data, payload 0/1
     int sig_ack = rtmin + 1;  // ack
     int sig_fin = rtmin + 2;  // fin, payload 2
-    // rtmin+3 оставили в запасе
+    // rtmin+3 РѕСЃС‚Р°РІРёР»Рё РІ Р·Р°РїР°СЃРµ
 
-    // Блокируем наши сигналы ДО fork(), чтобы sigwaitinfo работал корректно
+    // Р‘Р»РѕРєРёСЂСѓРµРј РЅР°С€Рё СЃРёРіРЅР°Р»С‹ Р”Рћ fork(), С‡С‚РѕР±С‹ sigwaitinfo СЂР°Р±РѕС‚Р°Р» РєРѕСЂСЂРµРєС‚РЅРѕ
     sigset_t mask;
     sigemptyset(&mask);
     sigaddset(&mask, sig_bit);

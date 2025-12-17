@@ -1,5 +1,5 @@
-/* myls.c — ls-минималка для Linux с -l -i -n -R -a -d, цветом,
- * выравниванием как у GNU ls и колонками в коротком режиме (как ls -C).
+/* myls.c вЂ” ls-РјРёРЅРёРјР°Р»РєР° РґР»СЏ Linux СЃ -l -i -n -R -a -d, С†РІРµС‚РѕРј,
+ * РІС‹СЂР°РІРЅРёРІР°РЅРёРµРј РєР°Рє Сѓ GNU ls Рё РєРѕР»РѕРЅРєР°РјРё РІ РєРѕСЂРѕС‚РєРѕРј СЂРµР¶РёРјРµ (РєР°Рє ls -C).
  */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -128,7 +128,7 @@ static int by_name(const struct dirent** a, const struct dirent** b)
     return alphasort(a, b);
 }
 
-/* собираем список записей каталога (имя + stat) и вычисляем ширины колонок */
+/* СЃРѕР±РёСЂР°РµРј СЃРїРёСЃРѕРє Р·Р°РїРёСЃРµР№ РєР°С‚Р°Р»РѕРіР° (РёРјСЏ + stat) Рё РІС‹С‡РёСЃР»СЏРµРј С€РёСЂРёРЅС‹ РєРѕР»РѕРЅРѕРє */
 static int scandir_items(const char* path, const struct opts* o,
     struct item** out, int* inode_w,
     int* links_w, int* owner_w, int* group_w, int* size_w,
@@ -164,7 +164,7 @@ static int scandir_items(const char* path, const struct opts* o,
             continue;
         }
 
-        items[i].name = strdup(nl[i]->d_name);   /* копируем имя */
+        items[i].name = strdup(nl[i]->d_name);   /* РєРѕРїРёСЂСѓРµРј РёРјСЏ */
         free(nl[i]);
         if (!items[i].name) {
             int k;
@@ -203,7 +203,7 @@ static int scandir_items(const char* path, const struct opts* o,
     }
     free(nl);
 
-    /* компактно выкидываем элементы с name == NULL */
+    /* РєРѕРјРїР°РєС‚РЅРѕ РІС‹РєРёРґС‹РІР°РµРј СЌР»РµРјРµРЅС‚С‹ СЃ name == NULL */
     {
         int w = 0;
         for (i = 0; i < n; i++) {
@@ -244,7 +244,7 @@ static void print_long_line(const struct item* it, const struct opts* o,
     putchar('\n');
 }
 
-/* печать короткого режима в несколько колонок (как ls -C) при выводе в TTY */
+/* РїРµС‡Р°С‚СЊ РєРѕСЂРѕС‚РєРѕРіРѕ СЂРµР¶РёРјР° РІ РЅРµСЃРєРѕР»СЊРєРѕ РєРѕР»РѕРЅРѕРє (РєР°Рє ls -C) РїСЂРё РІС‹РІРѕРґРµ РІ TTY */
 static void print_columns(const struct item* items, int n,
     const struct opts* o, int inode_w, size_t max_name_len)
 {
@@ -257,7 +257,7 @@ static void print_columns(const struct item* items, int n,
     int r, c;
 
     if (!is_tty) {
-        /* не TTY: по одному на строку */
+        /* РЅРµ TTY: РїРѕ РѕРґРЅРѕРјСѓ РЅР° СЃС‚СЂРѕРєСѓ */
         for (int i = 0; i < n; i++) {
             if (o->i) printf("%*ju ", inode_w, (uintmax_t)items[i].st.st_ino);
             print_name_colored(items[i].name, items[i].st.st_mode, o);
@@ -269,7 +269,7 @@ static void print_columns(const struct item* items, int n,
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == 0 && ws.ws_col > 0)
         termw = ws.ws_col;
 
-    /* ширина ячейки: [inode + пробел] + имя + 2 пробела */
+    /* С€РёСЂРёРЅР° СЏС‡РµР№РєРё: [inode + РїСЂРѕР±РµР»] + РёРјСЏ + 2 РїСЂРѕР±РµР»Р° */
     cellw = (o->i ? (size_t)inode_w + 1 : 0) + max_name_len + gap;
     if (cellw < 1) cellw = 1;
 
@@ -292,9 +292,9 @@ static void print_columns(const struct item* items, int n,
             print_name_colored(items[idx].name, items[idx].st.st_mode, o);
             printed += strlen(items[idx].name);
 
-            /* паддинг между колонками, кроме последней занятой */
+            /* РїР°РґРґРёРЅРі РјРµР¶РґСѓ РєРѕР»РѕРЅРєР°РјРё, РєСЂРѕРјРµ РїРѕСЃР»РµРґРЅРµР№ Р·Р°РЅСЏС‚РѕР№ */
             if (c < cols - 1) {
-                /* если следующего элемента в следующей колонке нет — не паддим */
+                /* РµСЃР»Рё СЃР»РµРґСѓСЋС‰РµРіРѕ СЌР»РµРјРµРЅС‚Р° РІ СЃР»РµРґСѓСЋС‰РµР№ РєРѕР»РѕРЅРєРµ РЅРµС‚ вЂ” РЅРµ РїР°РґРґРёРј */
                 int next_idx = r + (c + 1) * rows;
                 if (next_idx < n) {
                     size_t pad = cellw > printed ? cellw - printed : gap;
@@ -371,7 +371,7 @@ int main(int argc, char** argv)
             switch (s[j]) {
             case 'l': o.l = 1; break;
             case 'i': o.i = 1; break;
-            case 'n': o.n = 1; o.l = 1; break; /* -n включает long */
+            case 'n': o.n = 1; o.l = 1; break; /* -n РІРєР»СЋС‡Р°РµС‚ long */
             case 'R': o.R = 1; break;
             case 'a': o.a = 1; break;
             case 'd': o.d = 1; break;
@@ -398,7 +398,7 @@ int main(int argc, char** argv)
             print_long_line(&it, &o, inode_w, links_w, owner_w, group_w, size_w);
         }
         else {
-            /* короткий режим: колонками/или построчно в зависимости от TTY */
+            /* РєРѕСЂРѕС‚РєРёР№ СЂРµР¶РёРј: РєРѕР»РѕРЅРєР°РјРё/РёР»Рё РїРѕСЃС‚СЂРѕС‡РЅРѕ РІ Р·Р°РІРёСЃРёРјРѕСЃС‚Рё РѕС‚ TTY */
             struct item one[1] = { it };
             size_t max_name_len = strlen(it.name);
             int inode_w = o.i ? digits_uintmax((uintmax_t)it.st.st_ino) : 0;

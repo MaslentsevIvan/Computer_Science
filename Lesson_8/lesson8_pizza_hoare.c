@@ -5,12 +5,12 @@
 #include <unistd.h>
 #include <time.h>
 
-// --------- "Монитор Kitchen" ---------
+// --------- "РњРѕРЅРёС‚РѕСЂ Kitchen" ---------
 
 typedef struct {
-    int free_tables;     // свободные столы
-    int ready_pizzas;    // готовые пиццы
-    int active_cooks;    // сколько поваров ещё работают
+    int free_tables;     // СЃРІРѕР±РѕРґРЅС‹Рµ СЃС‚РѕР»С‹
+    int ready_pizzas;    // РіРѕС‚РѕРІС‹Рµ РїРёС†С†С‹
+    int active_cooks;    // СЃРєРѕР»СЊРєРѕ РїРѕРІР°СЂРѕРІ РµС‰С‘ СЂР°Р±РѕС‚Р°СЋС‚
 
     pthread_mutex_t mtx;
     pthread_cond_t  cond_table_free;
@@ -26,7 +26,7 @@ static void kitchen_init(Kitchen* k, int tables, int cooks) {
     pthread_cond_init(&k->cond_pizza_ready, NULL);
 }
 
-// Повар хочет занять стол
+// РџРѕРІР°СЂ С…РѕС‡РµС‚ Р·Р°РЅСЏС‚СЊ СЃС‚РѕР»
 static void kitchen_start_cooking(Kitchen* k) {
     pthread_mutex_lock(&k->mtx);
     while (k->free_tables == 0) {
@@ -36,47 +36,47 @@ static void kitchen_start_cooking(Kitchen* k) {
     pthread_mutex_unlock(&k->mtx);
 }
 
-// Повар закончил очередную пиццу
+// РџРѕРІР°СЂ Р·Р°РєРѕРЅС‡РёР» РѕС‡РµСЂРµРґРЅСѓСЋ РїРёС†С†Сѓ
 static void kitchen_finish_cooking(Kitchen* k) {
     pthread_mutex_lock(&k->mtx);
     k->ready_pizzas++;
     k->free_tables++;
 
-    // разбудим и повара (если кто ждёт стол), и курьера (если ждёт пиццу)
+    // СЂР°Р·Р±СѓРґРёРј Рё РїРѕРІР°СЂР° (РµСЃР»Рё РєС‚Рѕ Р¶РґС‘С‚ СЃС‚РѕР»), Рё РєСѓСЂСЊРµСЂР° (РµСЃР»Рё Р¶РґС‘С‚ РїРёС†С†Сѓ)
     pthread_cond_signal(&k->cond_table_free);
     pthread_cond_signal(&k->cond_pizza_ready);
     pthread_mutex_unlock(&k->mtx);
 }
 
-// Повар сделал все свои пиццы и уходит
+// РџРѕРІР°СЂ СЃРґРµР»Р°Р» РІСЃРµ СЃРІРѕРё РїРёС†С†С‹ Рё СѓС…РѕРґРёС‚
 static void kitchen_cook_done(Kitchen* k) {
     pthread_mutex_lock(&k->mtx);
     k->active_cooks--;
     if (k->active_cooks == 0) {
-        // новых пицц больше не будет — разбудить всех курьеров,
-        // которые, возможно, ждут ready_pizzas > 0
+        // РЅРѕРІС‹С… РїРёС†С† Р±РѕР»СЊС€Рµ РЅРµ Р±СѓРґРµС‚ вЂ” СЂР°Р·Р±СѓРґРёС‚СЊ РІСЃРµС… РєСѓСЂСЊРµСЂРѕРІ,
+        // РєРѕС‚РѕСЂС‹Рµ, РІРѕР·РјРѕР¶РЅРѕ, Р¶РґСѓС‚ ready_pizzas > 0
         pthread_cond_broadcast(&k->cond_pizza_ready);
     }
     pthread_mutex_unlock(&k->mtx);
 }
 
-// Курьер пытается взять пиццу.
-// Возвращает 1, если пицца взята; 0, если работы больше не будет.
+// РљСѓСЂСЊРµСЂ РїС‹С‚Р°РµС‚СЃСЏ РІР·СЏС‚СЊ РїРёС†С†Сѓ.
+// Р’РѕР·РІСЂР°С‰Р°РµС‚ 1, РµСЃР»Рё РїРёС†С†Р° РІР·СЏС‚Р°; 0, РµСЃР»Рё СЂР°Р±РѕС‚С‹ Р±РѕР»СЊС€Рµ РЅРµ Р±СѓРґРµС‚.
 static int kitchen_take_pizza(Kitchen* k) {
     pthread_mutex_lock(&k->mtx);
 
-    // Пока нет готовых пицц, но ещё есть живые повара — ждём
+    // РџРѕРєР° РЅРµС‚ РіРѕС‚РѕРІС‹С… РїРёС†С†, РЅРѕ РµС‰С‘ РµСЃС‚СЊ Р¶РёРІС‹Рµ РїРѕРІР°СЂР° вЂ” Р¶РґС‘Рј
     while (k->ready_pizzas == 0 && k->active_cooks > 0) {
         pthread_cond_wait(&k->cond_pizza_ready, &k->mtx);
     }
 
-    // Если нет ни пицц, ни поваров — работёнки больше нет
+    // Р•СЃР»Рё РЅРµС‚ РЅРё РїРёС†С†, РЅРё РїРѕРІР°СЂРѕРІ вЂ” СЂР°Р±РѕС‚С‘РЅРєРё Р±РѕР»СЊС€Рµ РЅРµС‚
     if (k->ready_pizzas == 0 && k->active_cooks == 0) {
         pthread_mutex_unlock(&k->mtx);
         return 0;
     }
 
-    // здесь ready_pizzas > 0
+    // Р·РґРµСЃСЊ ready_pizzas > 0
     k->ready_pizzas--;
     pthread_mutex_unlock(&k->mtx);
     return 1;
@@ -88,7 +88,7 @@ static void kitchen_destroy(Kitchen* k) {
     pthread_cond_destroy(&k->cond_pizza_ready);
 }
 
-// --------- "Клиентская часть": потоки поваров и курьеров ---------
+// --------- "РљР»РёРµРЅС‚СЃРєР°СЏ С‡Р°СЃС‚СЊ": РїРѕС‚РѕРєРё РїРѕРІР°СЂРѕРІ Рё РєСѓСЂСЊРµСЂРѕРІ ---------
 
 typedef struct {
     int id;
@@ -120,7 +120,7 @@ void* cook_thread(void* arg) {
         printf("Cook %d: started pizza %d/%d\n", id, i + 1, n);
         fflush(stdout);
 
-        // готовим (имитация временем)
+        // РіРѕС‚РѕРІРёРј (РёРјРёС‚Р°С†РёСЏ РІСЂРµРјРµРЅРµРј)
         sleep(rnd_range(1, 3));
 
         printf("Cook %d: finished pizza %d/%d\n", id, i + 1, n);
@@ -152,7 +152,7 @@ void* courier_thread(void* arg) {
         printf("Courier %d: took pizza, delivering...\n", id);
         fflush(stdout);
 
-        // доставка (имитация временем)
+        // РґРѕСЃС‚Р°РІРєР° (РёРјРёС‚Р°С†РёСЏ РІСЂРµРјРµРЅРµРј)
         sleep(rnd_range(1, 3));
 
         printf("Courier %d: delivered pizza\n", id);
@@ -162,7 +162,7 @@ void* courier_thread(void* arg) {
     return NULL;
 }
 
-// --------- main: создание потоков и запуск "монитора" ---------
+// --------- main: СЃРѕР·РґР°РЅРёРµ РїРѕС‚РѕРєРѕРІ Рё Р·Р°РїСѓСЃРє "РјРѕРЅРёС‚РѕСЂР°" ---------
 
 int main(int argc, char** argv) {
     if (argc != 5) {
@@ -173,8 +173,8 @@ int main(int argc, char** argv) {
     }
 
     int N_tables = atoi(argv[1]);
-    int P = atoi(argv[2]); // повара
-    int K = atoi(argv[3]); // курьеры
+    int P = atoi(argv[2]); // РїРѕРІР°СЂР°
+    int K = atoi(argv[3]); // РєСѓСЂСЊРµСЂС‹
     int max_p = atoi(argv[4]);
 
     if (N_tables <= 0 || P <= 0 || K <= 0 || max_p <= 0) {
@@ -199,7 +199,7 @@ int main(int argc, char** argv) {
 
     int total_pizzas = 0;
 
-    // создаём поваров
+    // СЃРѕР·РґР°С‘Рј РїРѕРІР°СЂРѕРІ
     for (int i = 0; i < P; ++i) {
         int n = rnd_range(1, max_p);
         cook_args[i].id = i;
@@ -217,7 +217,7 @@ int main(int argc, char** argv) {
     printf("Total pizzas to make: %d\n", total_pizzas);
     fflush(stdout);
 
-    // создаём курьеров
+    // СЃРѕР·РґР°С‘Рј РєСѓСЂСЊРµСЂРѕРІ
     for (int i = 0; i < K; ++i) {
         courier_args[i].id = i;
         courier_args[i].kitchen = &kitchen;
@@ -228,12 +228,12 @@ int main(int argc, char** argv) {
         }
     }
 
-    // ждём поваров
+    // Р¶РґС‘Рј РїРѕРІР°СЂРѕРІ
     for (int i = 0; i < P; ++i) {
         pthread_join(cook_threads[i], NULL);
     }
 
-    // ждём курьеров
+    // Р¶РґС‘Рј РєСѓСЂСЊРµСЂРѕРІ
     for (int i = 0; i < K; ++i) {
         pthread_join(courier_threads[i], NULL);
     }

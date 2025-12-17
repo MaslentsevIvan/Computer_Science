@@ -14,15 +14,15 @@ typedef struct {
     pthread_cond_t  can_put;
     pthread_cond_t  can_get;
 
-    bool full;      // â áóôåğå ëåæàò äàííûå
-    bool done;      // writer çàêîí÷èë íîğìàëüíî
-    bool stop;      // ôàòàëüíàÿ îøèáêà: âñåì çàâåğøàòüñÿ
+    bool full;      // Ğ² Ğ±ÑƒÑ„ĞµÑ€Ğµ Ğ»ĞµĞ¶Ğ°Ñ‚ Ğ´Ğ°Ğ½Ğ½Ñ‹Ğµ
+    bool done;      // writer Ğ·Ğ°ĞºĞ¾Ğ½Ñ‡Ğ¸Ğ» Ğ½Ğ¾Ñ€Ğ¼Ğ°Ğ»ÑŒĞ½Ğ¾
+    bool stop;      // Ñ„Ğ°Ñ‚Ğ°Ğ»ÑŒĞ½Ğ°Ñ Ğ¾ÑˆĞ¸Ğ±ĞºĞ°: Ğ²ÑĞµĞ¼ Ğ·Ğ°Ğ²ĞµÑ€ÑˆĞ°Ñ‚ÑŒÑÑ
 
     size_t len;
     char   buf[BUFSZ];
 
-    int err_no;           // errno îøèáêè
-    const char* err_ctx;  // ôàéë/êîíòåêñò ("stdout", ïóòü, ...)
+    int err_no;           // errno Ğ¾ÑˆĞ¸Ğ±ĞºĞ¸
+    const char* err_ctx;  // Ñ„Ğ°Ğ¹Ğ»/ĞºĞ¾Ğ½Ñ‚ĞµĞºÑÑ‚ ("stdout", Ğ¿ÑƒÑ‚ÑŒ, ...)
 } Monitor;
 
 typedef struct {
@@ -45,7 +45,7 @@ static void mon_destroy(Monitor* m) {
 }
 
 static void mon_fail_locked(Monitor* m, int err_no, const char* ctx) {
-    if (!m->stop) {              // ôèêñèğóåì ïåğâóş îøèáêó
+    if (!m->stop) {              // Ñ„Ğ¸ĞºÑĞ¸Ñ€ÑƒĞµĞ¼ Ğ¿ĞµÑ€Ğ²ÑƒÑ Ğ¾ÑˆĞ¸Ğ±ĞºÑƒ
         m->stop = true;
         m->err_no = err_no;
         m->err_ctx = ctx;
@@ -94,7 +94,7 @@ static void copy_fd_to_monitor(Monitor* m, int fd, const char* ctx_name) {
         while (m->full && !m->stop) {
             pthread_cond_wait(&m->can_put, &m->mtx);
         }
-        if (m->stop) {                     // êòî-òî óæå óïàë
+        if (m->stop) {                     // ĞºÑ‚Ğ¾-Ñ‚Ğ¾ ÑƒĞ¶Ğµ ÑƒĞ¿Ğ°Ğ»
             pthread_mutex_unlock(&m->mtx);
             return;
         }
