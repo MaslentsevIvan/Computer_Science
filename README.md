@@ -26,7 +26,7 @@
 | 7 | `cp` через `mmap` + «пиццерия» (потоки/семафоры) | `Lesson_7/` | [cp_mmap](./Lesson_7/lesson7_cp_mmap.c)<br>[pizza](./Lesson_7/lesson7_pizza.c) |
 | 8 | Producer/consumer через `pthread_cond` (`pcat2`) + монитор Хоара (пицца) | `Lesson_8/` | [pcat2](./Lesson_8/lesson8_pcat2.c)<br>[pizza_hoare](./Lesson_8/lesson8_pizza_hoare.c) |
 | 9 | «Сборка устройства»: 2 ключа + отвёртка (SysV sem + shm) | `Lesson_9/` | [код](./Lesson_9/lesson9_task3_test.c) |
-| 10 | `myls` — упрощённый `ls` (`-l -i -n -R -a -d`, колонки, цвет) | `Lesson_10/` | [код](./Lesson_10/myls.c) |
+| 10 | `myls` — упрощённый `ls` (`-l -i -n -R -a -d`, колонки, цвет) | `Lesson_10/` | [код](./Lesson_10/lesson10_myls.c) |
 | 11 | Cигналы | `Lesson_11/` | [файл](./Lesson_11/lesson11_signal_cat.c) |
 | 11 | Задача про богатырей | `Bogatyr/` | [файл](./Bogatyr/lesson13_bogatyr.c) |
 | 11 | Финальная задача (зачёт) | `Final_test` | [файл](./Final_test/single.c) |

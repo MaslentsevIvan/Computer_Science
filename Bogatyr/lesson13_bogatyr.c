@@ -1,4 +1,3 @@
-// bogatyrs.c
 #define _GNU_SOURCE
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -11,13 +10,13 @@
 #include <string.h>
 
 enum {
-    MT_LOCK = 1,   // один "жетон" лидерства
-    MT_REG = 2,   // регистрации (читает только дирижёр)
-    MT_ACK = 3    // ACK/BYE (читает только дирижёр)
+    MT_LOCK = 1,   // РѕРґРёРЅ "Р¶РµС‚РѕРЅ" Р»РёРґРµСЂСЃС‚РІР°
+    MT_REG = 2,   // СЂРµРіРёСЃС‚СЂР°С†РёРё (С‡РёС‚Р°РµС‚ С‚РѕР»СЊРєРѕ РґРёСЂРёР¶С‘СЂ)
+    MT_ACK = 3    // ACK/BYE (С‡РёС‚Р°РµС‚ С‚РѕР»СЊРєРѕ РґРёСЂРёР¶С‘СЂ)
 };
 
 static long MT_TO(pid_t pid) {
-    // личный "почтовый ящик" процесса
+    // Р»РёС‡РЅС‹Р№ "РїРѕС‡С‚РѕРІС‹Р№ СЏС‰РёРє" РїСЂРѕС†РµСЃСЃР°
     return (long)pid + 1000L;
 }
 
@@ -32,11 +31,11 @@ enum kind {
 };
 
 struct msg {
-    long mtype;      // тип сообщения
-    int  kind;       // что это за сообщение
-    pid_t pid;       // отправитель/получатель (по смыслу)
-    int  seq;        // номер позиции (для ACK)
-    unsigned char ch;// символ
+    long mtype;      // С‚РёРї СЃРѕРѕР±С‰РµРЅРёСЏ
+    int  kind;       // С‡С‚Рѕ СЌС‚Рѕ Р·Р° СЃРѕРѕР±С‰РµРЅРёРµ
+    pid_t pid;       // РѕС‚РїСЂР°РІРёС‚РµР»СЊ/РїРѕР»СѓС‡Р°С‚РµР»СЊ (РїРѕ СЃРјС‹СЃР»Сѓ)
+    int  seq;        // РЅРѕРјРµСЂ РїРѕР·РёС†РёРё (РґР»СЏ ACK)
+    unsigned char ch;// СЃРёРјРІРѕР»
 };
 
 static void die(const char* what) {
@@ -57,7 +56,7 @@ static ssize_t xmsgrcv(int q, struct msg* m, long type, int flags) {
         ssize_t r = msgrcv(q, m, sizeof(*m) - sizeof(m->mtype), type, flags);
         if (r >= 0) return r;
         if (errno == EINTR) continue;
-        return -1; // пусть вызывающий решит, что делать
+        return -1; // РїСѓСЃС‚СЊ РІС‹Р·С‹РІР°СЋС‰РёР№ СЂРµС€РёС‚, С‡С‚Рѕ РґРµР»Р°С‚СЊ
     }
 }
 
@@ -75,7 +74,7 @@ static size_t collect_unique(const unsigned char* s, unsigned char* out, size_t 
         if (!seen[c]) {
             seen[c] = 1;
             if (k < out_cap) out[k++] = c;
-            else return k; // переполнение (не должно случиться)
+            else return k; // РїРµСЂРµРїРѕР»РЅРµРЅРёРµ (РЅРµ РґРѕР»Р¶РЅРѕ СЃР»СѓС‡РёС‚СЊСЃСЏ)
         }
     }
     return k;
@@ -103,51 +102,51 @@ int main(int argc, char** argv) {
         size_t cap = 0;
         ssize_t len = getline(&song, &cap, stdin);
         if (len < 0) die("getline");
-        // Оставим '\n', если он есть — это часть "песни"
+        // РћСЃС‚Р°РІРёРј '\n', РµСЃР»Рё РѕРЅ РµСЃС‚СЊ вЂ” СЌС‚Рѕ С‡Р°СЃС‚СЊ "РїРµСЃРЅРё"
     }
 
-    // Очередь сообщений создаёт "запускающий" процесс (это НЕ дирижёр по логике).
+    // РћС‡РµСЂРµРґСЊ СЃРѕРѕР±С‰РµРЅРёР№ СЃРѕР·РґР°С‘С‚ "Р·Р°РїСѓСЃРєР°СЋС‰РёР№" РїСЂРѕС†РµСЃСЃ (СЌС‚Рѕ РќР• РґРёСЂРёР¶С‘СЂ РїРѕ Р»РѕРіРёРєРµ).
     int q = msgget(IPC_PRIVATE, 0600 | IPC_CREAT);
     if (q < 0) die("msgget");
 
-    // Кладём один LOCK-жетон: кто его снимет — станет дирижёром.
+    // РљР»Р°РґС‘Рј РѕРґРёРЅ LOCK-Р¶РµС‚РѕРЅ: РєС‚Рѕ РµРіРѕ СЃРЅРёРјРµС‚ вЂ” СЃС‚Р°РЅРµС‚ РґРёСЂРёР¶С‘СЂРѕРј.
     struct msg lock = { .mtype = MT_LOCK, .kind = K_LOCK, .pid = 0, .seq = 0, .ch = 0 };
     xmsgsnd(q, &lock, 0);
 
-    // Форкаем ещё n-1 процессов
+    // Р¤РѕСЂРєР°РµРј РµС‰С‘ n-1 РїСЂРѕС†РµСЃСЃРѕРІ
     for (int i = 1; i < n; i++) {
         pid_t pid = fork();
         if (pid < 0) die("fork");
-        if (pid == 0) break; // ребёнок выходит из цикла и идёт в общий код
+        if (pid == 0) break; // СЂРµР±С‘РЅРѕРє РІС‹С…РѕРґРёС‚ РёР· С†РёРєР»Р° Рё РёРґС‘С‚ РІ РѕР±С‰РёР№ РєРѕРґ
     }
 
-    // Начиная отсюда — один и тот же алгоритм у всех процессов
+    // РќР°С‡РёРЅР°СЏ РѕС‚СЃСЋРґР° вЂ” РѕРґРёРЅ Рё С‚РѕС‚ Р¶Рµ Р°Р»РіРѕСЂРёС‚Рј Сѓ РІСЃРµС… РїСЂРѕС†РµСЃСЃРѕРІ
     setvbuf(stdout, NULL, _IONBF, 0);
 
     pid_t self = getpid();
 
-    // 1) Регистрируемся
+    // 1) Р РµРіРёСЃС‚СЂРёСЂСѓРµРјСЃСЏ
     struct msg reg = { .mtype = MT_REG, .kind = K_REG, .pid = self, .seq = 0, .ch = 0 };
     xmsgsnd(q, &reg, 0);
 
-    // 2) Пытаемся стать дирижёром: кто первый забрал LOCK — тот дирижёр
+    // 2) РџС‹С‚Р°РµРјСЃСЏ СЃС‚Р°С‚СЊ РґРёСЂРёР¶С‘СЂРѕРј: РєС‚Рѕ РїРµСЂРІС‹Р№ Р·Р°Р±СЂР°Р» LOCK вЂ” С‚РѕС‚ РґРёСЂРёР¶С‘СЂ
     int is_conductor = 0;
     struct msg tmp;
 
-    // небольшая "разбежка", чтобы дирижёр не всегда был одним и тем же
+    // РЅРµР±РѕР»СЊС€Р°СЏ "СЂР°Р·Р±РµР¶РєР°", С‡С‚РѕР±С‹ РґРёСЂРёР¶С‘СЂ РЅРµ РІСЃРµРіРґР° Р±С‹Р» РѕРґРЅРёРј Рё С‚РµРј Р¶Рµ
     usleep((useconds_t)((self % 50) * 1000));
 
     if (xmsgrcv(q, &tmp, MT_LOCK, IPC_NOWAIT) >= 0 && tmp.kind == K_LOCK) {
         is_conductor = 1;
     }
 
-    unsigned char my_ch = 0;     // 0 => "молчу"
-    pid_t conductor_pid = -1;    // только для ясности (в workers не нужен)
+    unsigned char my_ch = 0;     // 0 => "РјРѕР»С‡Сѓ"
+    pid_t conductor_pid = -1;    // С‚РѕР»СЊРєРѕ РґР»СЏ СЏСЃРЅРѕСЃС‚Рё (РІ workers РЅРµ РЅСѓР¶РµРЅ)
 
     if (is_conductor) {
         conductor_pid = self;
 
-        // 3) Собираем всех участников
+        // 3) РЎРѕР±РёСЂР°РµРј РІСЃРµС… СѓС‡Р°СЃС‚РЅРёРєРѕРІ
         pid_t* pids = calloc((size_t)n, sizeof(pid_t));
         if (!pids) die("calloc pids");
 
@@ -158,16 +157,16 @@ int main(int argc, char** argv) {
             pids[i] = m.pid;
         }
 
-        // Чтобы назначение было детерминированным:
+        // Р§С‚РѕР±С‹ РЅР°Р·РЅР°С‡РµРЅРёРµ Р±С‹Р»Рѕ РґРµС‚РµСЂРјРёРЅРёСЂРѕРІР°РЅРЅС‹Рј:
         qsort(pids, (size_t)n, sizeof(pid_t), cmp_pid);
 
-        // 4) Уникальные символы песни
+        // 4) РЈРЅРёРєР°Р»СЊРЅС‹Рµ СЃРёРјРІРѕР»С‹ РїРµСЃРЅРё
         unsigned char uniq[256];
         size_t ucnt = collect_unique((unsigned char*)song, uniq, 256);
 
         if ((int)ucnt > n) {
             fprintf(stderr, "ERROR: unique symbols (%zu) > processes (%d)\n", ucnt, n);
-            // аварийно завершим всех
+            // Р°РІР°СЂРёР№РЅРѕ Р·Р°РІРµСЂС€РёРј РІСЃРµС…
             for (int i = 0; i < n; i++) {
                 struct msg done = { .mtype = MT_TO(pids[i]), .kind = K_DONE, .pid = conductor_pid };
                 xmsgsnd(q, &done, 0);
@@ -178,7 +177,7 @@ int main(int argc, char** argv) {
             return 3;
         }
 
-        // owner[c] = pid владельца символа c, или -1
+        // owner[c] = pid РІР»Р°РґРµР»СЊС†Р° СЃРёРјРІРѕР»Р° c, РёР»Рё -1
         pid_t owner[256];
         for (int c = 0; c < 256; c++) owner[c] = (pid_t)-1;
 
@@ -186,10 +185,10 @@ int main(int argc, char** argv) {
             owner[uniq[i]] = pids[i];
         }
 
-        // 5) Рассылаем ASSIGN каждому
+        // 5) Р Р°СЃСЃС‹Р»Р°РµРј ASSIGN РєР°Р¶РґРѕРјСѓ
         for (int i = 0; i < n; i++) {
             unsigned char assigned = 0;
-            // найдём символ, который принадлежит этому pid (если есть)
+            // РЅР°Р№РґС‘Рј СЃРёРјРІРѕР», РєРѕС‚РѕСЂС‹Р№ РїСЂРёРЅР°РґР»РµР¶РёС‚ СЌС‚РѕРјСѓ pid (РµСЃР»Рё РµСЃС‚СЊ)
             for (size_t k = 0; k < ucnt; k++) {
                 if (owner[uniq[k]] == pids[i]) { assigned = uniq[k]; break; }
             }
@@ -206,14 +205,14 @@ int main(int argc, char** argv) {
             if (pids[i] == self) my_ch = assigned;
         }
 
-        // 6) "Пение": идём по песне, выдаём TURN владельцу символа и ждём ACK
+        // 6) "РџРµРЅРёРµ": РёРґС‘Рј РїРѕ РїРµСЃРЅРµ, РІС‹РґР°С‘Рј TURN РІР»Р°РґРµР»СЊС†Сѓ СЃРёРјРІРѕР»Р° Рё Р¶РґС‘Рј ACK
         for (int seq = 0; song[seq] != '\0'; seq++) {
             unsigned char c = (unsigned char)song[seq];
             pid_t singer = owner[c];
-            if (singer == (pid_t)-1) continue; // на всякий случай
+            if (singer == (pid_t)-1) continue; // РЅР° РІСЃСЏРєРёР№ СЃР»СѓС‡Р°Р№
 
             if (singer == self) {
-                // дирижёр поёт свой символ сам
+                // РґРёСЂРёР¶С‘СЂ РїРѕС‘С‚ СЃРІРѕР№ СЃРёРјРІРѕР» СЃР°Рј
                 if (my_ch != 0) (void)write(STDOUT_FILENO, &c, 1);
                 continue;
             }
@@ -242,7 +241,7 @@ int main(int argc, char** argv) {
         }
 
 
-        // 7) Завершение: DONE всем + ждём BYE от остальных
+        // 7) Р—Р°РІРµСЂС€РµРЅРёРµ: DONE РІСЃРµРј + Р¶РґС‘Рј BYE РѕС‚ РѕСЃС‚Р°Р»СЊРЅС‹С…
         for (int i = 0; i < n; i++) {
             if (pids[i] == self) continue;
             struct msg done = { .mtype = MT_TO(pids[i]), .kind = K_DONE, .pid = conductor_pid };
@@ -256,7 +255,7 @@ int main(int argc, char** argv) {
             if (bye.kind == K_BYE) bye_need--;
         }
 
-        // Удаляем очередь
+        // РЈРґР°Р»СЏРµРј РѕС‡РµСЂРµРґСЊ
         msgctl(q, IPC_RMID, NULL);
 
         free(pids);
@@ -266,19 +265,19 @@ int main(int argc, char** argv) {
 
     // ---------------- WORKER ----------------
 
-    // Ждём ASSIGN
+    // Р–РґС‘Рј ASSIGN
     struct msg asg;
     if (xmsgrcv(q, &asg, MT_TO(self), 0) < 0) die("msgrcv ASSIGN");
     if (asg.kind != K_ASSIGN) { fprintf(stderr, "bad ASSIGN\n"); exit(5); }
     my_ch = asg.ch;
 
-    // Основной цикл: ждём TURN / DONE
+    // РћСЃРЅРѕРІРЅРѕР№ С†РёРєР»: Р¶РґС‘Рј TURN / DONE
     for (;;) {
         struct msg m;
         if (xmsgrcv(q, &m, MT_TO(self), 0) < 0) die("msgrcv worker");
 
         if (m.kind == K_TURN) {
-            // поём только свой символ; дирижёр присылает корректно, но проверим
+            // РїРѕС‘Рј С‚РѕР»СЊРєРѕ СЃРІРѕР№ СЃРёРјРІРѕР»; РґРёСЂРёР¶С‘СЂ РїСЂРёСЃС‹Р»Р°РµС‚ РєРѕСЂСЂРµРєС‚РЅРѕ, РЅРѕ РїСЂРѕРІРµСЂРёРј
             if (my_ch != 0 && m.ch == my_ch) {
                 (void)write(STDOUT_FILENO, &m.ch, 1);
             }
